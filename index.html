@@ -1,110 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lead Gen Pro</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-      text-align: center;
-      padding: 40px 20px;
-    }
-    .box {
-      max-width: 900px;
-      margin: auto;
-      background: #111827;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    }
-    h1 {
-      margin-bottom: 10px;
-    }
-    p {
-      opacity: 0.9;
-    }
-    button {
-      background: #22c55e;
-      color: white;
-      border: none;
-      padding: 14px 22px;
-      border-radius: 10px;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    button:hover {
-      opacity: 0.9;
-    }
-    #results {
-      text-align: left;
-      margin-top: 30px;
-    }
-    .lead {
-      background: #1f2937;
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-    .high {
-      border-left: 5px solid #ef4444;
-    }
-    .low {
-      border-left: 5px solid #3b82f6;
-    }
-    .muted {
-      color: #cbd5e1;
-      font-size: 14px;
-    }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <h1>Lead Gen Pro</h1>
-    <p>Google Maps business lead finder</p>
-    <button onclick="runLeads()">Run Lead Scraper</button>
-    <div id="results"></div>
-  </div>
-
-  <script>
-    async function runLeads() {
-      const results = document.getElementById("results");
-      results.innerHTML = "<p>Loading leads...</p>";
-
-      try {
-        const res = await fetch("/run");
-        const data = await res.json();
-
-        if (data.status !== "success") {
-          results.innerHTML = `<p>Error: ${data.message || "Unknown error"}</p>`;
-          return;
+    <title>Lead Gen Pro</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            padding: 40px;
         }
 
-        let html = `<h2>Total Leads: ${data.count}</h2>`;
+        button {
+            background: #22c55e;
+            border: none;
+            padding: 15px 25px;
+            font-size: 18px;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+        }
 
-        data.leads.forEach(lead => {
-          const priorityClass = lead.priority === "HIGH" ? "high" : "low";
-          html += `
-            <div class="lead ${priorityClass}">
-              <strong>${lead.name || "No Name"}</strong><br>
-              <span class="muted">Phone:</span> ${lead.phone || "No phone"}<br>
-              <span class="muted">Website:</span> ${lead.website || "No website"}<br>
-              <span class="muted">Email:</span> ${lead.email || "No email"}<br>
-              <span class="muted">Rating:</span> ${lead.rating || "N/A"}<br>
-              <span class="muted">Priority:</span> ${lead.priority || "N/A"}
-            </div>
-          `;
-        });
+        table {
+            margin: 30px auto;
+            width: 90%;
+            border-collapse: collapse;
+        }
 
-        results.innerHTML = html;
-      } catch (error) {
-        results.innerHTML = `<p>Request failed: ${error.message}</p>`;
-      }
-    }
-  </script>
+        th, td {
+            border: 1px solid #444;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Lead Gen Pro</h1>
+<p>Free Business Lead Finder</p>
+
+<button onclick="runScraper()">Run Lead Scraper</button>
+
+<h2 id="count"></h2>
+
+<table id="results"></table>
+
+<script>
+async function runScraper() {
+    document.getElementById("count").innerText = "Loading...";
+
+    const res = await fetch('/api/run?q=restaurant&location=cairo');
+    const data = await res.json();
+
+    document.getElementById("count").innerText = "Total Leads: " + data.count;
+
+    let table = "<tr><th>Name</th><th>Type</th><th>Location</th></tr>";
+
+    data.leads.forEach(l => {
+        table += `
+            <tr>
+                <td>${l.name}</td>
+                <td>${l.type}</td>
+                <td>${l.lat}, ${l.lon}</td>
+            </tr>
+        `;
+    });
+
+    document.getElementById("results").innerHTML = table;
+}
+</script>
+
 </body>
 </html>
