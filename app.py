@@ -1,44 +1,45 @@
-from flask import Flask, jsonify
-from scraper.maps_scraper import get_coordinates, search_places
-from scraper.details_scraper import get_details
-from scraper.email_finder import extract_email
-from utils.helpers import score_lead
+from flask import Flask, jsonify, request
+import requests
 
 app = Flask(__name__)
 
 @app.route("/")
-def health():
+def home():
     return jsonify({
         "status": "ok",
-        "message": "Lead Gen Pro API is running on Vercel",
-        "routes": {
-            "health": "/",
-            "run": "/run"
-        }
+        "message": "Free Lead Gen API running (no Google API)"
     })
 
 @app.route("/run")
-def run_leads():
+def run():
     try:
-        lat, lng = get_coordinates()
-        places = search_places(lat, lng)
+        query = request.args.get("q", "restaurant")
+        location = request.args.get("location", "Cairo")
+
+        url = "https://nominatim.openstreetmap.org/search"
+
+        params = {
+            "q": f"{query} in {location}",
+            "format": "json",
+            "limit": 20
+        }
+
+        headers = {
+            "User-Agent": "lead-gen-app"
+        }
+
+        res = requests.get(url, params=params, headers=headers)
+        data = res.json()
 
         leads = []
 
-        for place in places[:20]:
-            details = get_details(place["place_id"])
-            email = extract_email(details["website"]) if details.get("website") else None
-            priority = score_lead(details, email)
-
+        for place in data:
             leads.append({
-                "name": details.get("name"),
-                "phone": details.get("phone"),
-                "website": details.get("website"),
-                "email": email,
-                "rating": details.get("rating"),
-                "priority": priority,
-                "lat": details.get("lat"),
-                "lng": details.get("lng")
+                "name": place.get("display_name"),
+                "lat": place.get("lat"),
+                "lon": place.get("lon"),
+                "type": place.get("type"),
+                "priority": "HIGH"
             })
 
         return jsonify({
@@ -51,4 +52,4 @@ def run_leads():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
