@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lead Generator</title>
+  <style>
+    body { font-family: Arial; text-align: center; background: #111; color: white; }
+    button { padding: 15px; font-size: 16px; background: green; color: white; border: none; }
+    #results { margin-top: 20px; }
+  </style>
+</head>
+
+<body>
+
+<h1>Lead Generation System 🚀</h1>
+
+<button onclick="runLeads()">Run Lead Scraper</button>
+
+<div id="results"></div>
+
+<script>
+async function runLeads() {
+  document.getElementById("results").innerHTML = "Loading...";
+
+  const res = await fetch("/run");
+  const data = await res.json();
+
+  let html = `<h2>Total Leads: ${data.count}</h2>`;
+
+  data.leads.forEach(lead => {
+    html += `<p>${lead.name} - ${lead.phone || "No Phone"} - ${lead.priority}</p>`;
+  });
+
+  document.getElementById("results").innerHTML = html;
+}
+</script>
+
+</body>
+</html>
