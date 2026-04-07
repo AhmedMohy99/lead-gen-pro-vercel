@@ -1,41 +1,54 @@
-from flask import Flask, jsonify, request
-from main import run_pipeline
-from config import LOCATION, BUSINESS_TYPE, RADIUS
+from flask import Flask, jsonify
+from scraper.maps_scraper import get_coordinates, search_places
+from scraper.details_scraper import get_details
+from scraper.email_finder import extract_email
+from utils.helpers import score_lead
 
 app = Flask(__name__)
 
-
-@app.get('/')
-def home():
+@app.route("/")
+def health():
     return jsonify({
-        'status': 'ok',
-        'message': 'Lead Gen Pro API is running on Vercel',
-        'defaults': {
-            'location': LOCATION,
-            'business_type': BUSINESS_TYPE,
-            'radius': RADIUS,
-        },
-        'routes': {
-            'health': '/',
-            'run': '/run',
+        "status": "ok",
+        "message": "Lead Gen Pro API is running on Vercel",
+        "routes": {
+            "health": "/",
+            "run": "/run"
         }
     })
 
-
-@app.get('/run')
-def run():
-    limit_value = request.args.get('limit', default='20')
+@app.route("/run")
+def run_leads():
     try:
-        limit = max(1, min(int(limit_value), 60))
-    except ValueError:
-        return jsonify({'status': 'error', 'message': 'limit must be a number'}), 400
+        lat, lng = get_coordinates()
+        places = search_places(lat, lng)
 
-    try:
-        result = run_pipeline(limit=limit)
-        # Vercel file system is temporary, so return the data directly.
-        return jsonify(result)
-    except Exception as exc:
-        return jsonify({'status': 'error', 'message': str(exc)}), 500
+        leads = []
 
+        for place in places[:20]:
+            details = get_details(place["place_id"])
+            email = extract_email(details["website"]) if details.get("website") else None
+            priority = score_lead(details, email)
 
-# Vercel looks for `app`
+            leads.append({
+                "name": details.get("name"),
+                "phone": details.get("phone"),
+                "website": details.get("website"),
+                "email": email,
+                "rating": details.get("rating"),
+                "priority": priority,
+                "lat": details.get("lat"),
+                "lng": details.get("lng")
+            })
+
+        return jsonify({
+            "status": "success",
+            "count": len(leads),
+            "leads": leads
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
