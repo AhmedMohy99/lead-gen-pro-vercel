@@ -12,16 +12,16 @@
   ],
   "routes": [
     {
+      "src": "^/run.*",
+      "dest": "app.py"
+    },
+    {
       "src": "^/$",
       "dest": "/index.html"
     },
     {
-      "src": "^/run$",
-      "dest": "app.py"
-    },
-    {
       "src": "/(.*)",
-      "dest": "app.py"
+      "dest": "/index.html"
     }
   ]
 }
